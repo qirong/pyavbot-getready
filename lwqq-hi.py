@@ -1,8 +1,10 @@
 #-*- coding=utf-8 -*-
 
 from webqq import WebQQ
+from os import name as osname
 import getpass
 import time
+
 
 def get_reply(msg):
     msg = msg.strip()
@@ -27,7 +29,10 @@ def parse_qq_json(qq, a):
                                 "%d" % it["value"]["from_uin"], reply)
                         qq.sendMsg(
                             "%d" % it["value"]["from_uin"], reply)
-                    print uin, ":", msg
+                    if osname == 'nt':
+                        print uin, ":", msg.decode("gbk")
+                    else:
+                        print uin, ":", msg
 
 def main():
     user = raw_input('QQ:')
