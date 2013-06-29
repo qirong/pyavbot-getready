@@ -1,4 +1,4 @@
-#-*- coding=utf-8 -*-
+﻿#-*- coding=utf-8 -*-
 
 from webqq import WebQQ
 from os import name as osname
@@ -30,7 +30,7 @@ def parse_qq_json(qq, a):
                         qq.sendMsg(
                             "%d" % it["value"]["from_uin"], reply)
                     if osname == 'nt':
-                        print uin, ":", msg.decode("gbk")
+                        print uin, ":", msg.decode("utf-8").encode("gbk")
                     else:
                         print uin, ":", msg
 
