@@ -5,7 +5,7 @@ from os import name as osname
 import getpass
 import time
 
-def reply(sender_id, sender, msg):
+def reply_qq(sender_id, sender, msg):
     msg = msg.strip()
     if osname == 'nt':
         print sender.decode("utf-8").encode("gbk"), " : ", \
@@ -24,12 +24,12 @@ def main():
     user = raw_input('QQ:')
     pwd = getpass.getpass('Password: ')
     qq = WebQQ(user, pwd)
-    qq.on_gotmsg = reply
+    qq.on_gotmsg = reply_qq
     qq.login()
     while 1:
         time.sleep(0.5)
         try:
-            qq.parse_qq_json(qq.pollMsg())
+            qq.parse_qq_json(qq.poll_msg())
         except KeyboardInterrupt:
             print "CTRL+C met, exit!"
             return

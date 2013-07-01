@@ -42,13 +42,13 @@ class WebQQ:
         self.user = user
         self.pwd = pwd
         self.clientid = str(random.randint(10000000, 99999999))
-
+    
     def login(self):
-        self.getSafeCode()
-        self.loginGet()
-        self.loginPost()
+        self.get_safe_code()
+        self.login_get()
+        self.login_post()
 
-    def getSafeCode(self):
+    def get_safe_code(self):
         url = \
         'https://ssl.ptlogin2.qq.com/check?uin=' + str(self.user) + \
         '&appid=1003903&js_ver=10017&js_type=0' \
@@ -76,8 +76,8 @@ class WebQQ:
             fi.close()
             print "Please look at ./image.jpg .."
             self.verifycode1 = raw_input("Verifer : ")
-
-    def loginGet(self):
+    
+    def login_get(self):
         login_url = 'https://ssl.ptlogin2.qq.com/login?u=' + \
         self.user + '&p=' + \
         str(md5_2(self.pwd, self.verifycode1, self.verifycode2)) + \
@@ -104,8 +104,8 @@ class WebQQ:
         urllib2.urlopen(
         'http://web2.qq.com/web2/get_msg_tip?uin=&tp=1&id=0' \
         '&retype=1&rc=0&lv=3&t=' + time_stamp()).read()
-
-    def loginPost(self):
+    
+    def login_post(self):
         url = 'http://d.web2.qq.com/channel/login2'
         r = {"status": "online", 
         "ptwebqq": self.ptwebqq, 
@@ -120,8 +120,8 @@ class WebQQ:
         self.vfwebqq = self.result['result']['vfwebqq']
         self.vfwebqq = \
         self.vfwebqq.decode("ascii").encode("utf-8")
-
-    def pollMsg(self):
+    
+    def poll_msg(self):
         url = 'http://d.web2.qq.com/channel/poll2'
         r = {"clientid": self.clientid, 
         "psessionid": self.psessionid, 
@@ -130,28 +130,28 @@ class WebQQ:
         '&clientid=' + self.clientid + \
         '&psessionid=' + self.psessionid
         return json.load(self.smoothly_POST_open(url, data))
-
-    def sendMsg(self, uin, msg):
+    
+    def send_msg(self, uin, msg):
         url = 'http://d.web2.qq.com/channel/send_buddy_msg2'
         self.smoothly_POST(url, self.build_msg_data(uin, msg))
-
-    def sendQunMsg(self, uin, msg):
+    
+    def send_group_msg(self, uin, msg):
         url = 'http://d.web2.qq.com/channel/send_qun_msg2'
         self.smoothly_POST(url, self.build_msg_data(uin, msg, True))
-        
+    
     def smoothly_POST(self, url, data):
         return self.smoothly_POST_open(url, data).read()
-        
+    
     def smoothly_POST_open(self, url, data):
         req = urllib2.Request(url, data)
         req.add_header('Referer', QQ_REFERER)
         return urllib2.urlopen(req)
-        
+    
     def smoothly_GET_open(self, url, data):
         req = urllib2.Request(url + '?' + data)
         req.add_header('Referer', QQ_REFERER)
         return urllib2.urlopen(req)
-        
+    
     def build_msg_data(self, uin, msg, in_group=False):
         font = {"name": "微软雅黑", 
         "size": 10, 
@@ -186,7 +186,7 @@ class WebQQ:
                 if inf["result"].has_key("nick"):
                     return inf["result"]["nick"].encode("utf-8")
         return uin
-
+    
     def parse_message_json_part(self, it):
         if not (it.has_key("poll_type") and it.has_key("value")):
             return
@@ -208,8 +208,8 @@ class WebQQ:
         reply = self.on_gotmsg(uin, nick, msg)
         if (reply != "") and (reply.__class__ == "".__class__):
             if poll_type == "group_message":
-                self.sendQunMsg(uin, reply)
-            self.sendMsg(uin, reply)
+                self.send_group_msg(uin, reply)
+            self.send_msg(uin, reply)
     
     def parse_qq_json(self, a):
         if a.has_key("result"):
