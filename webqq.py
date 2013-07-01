@@ -5,6 +5,10 @@ import random
 import cookielib
 import json
 import hashlib
+import time
+
+def time_stamp():
+    return str(int(time.time()))
 
 def hex_md5hash(s):
     return hashlib.md5(s).hexdigest().upper()
@@ -22,6 +26,7 @@ def md5_2(pwd, verifyCode1, verifyCode2):
     pwd_final = hex_md5hash(pwd_2 + verifyCode1.upper())
     return pwd_final
 
+QQ_API_BASE = 'http://s.web2.qq.com/api/'
 QQ_REFERER = \
 'http://d.web2.qq.com/proxy.html?v=20110331002&callback=1&id=2'
 
@@ -90,7 +95,7 @@ class WebQQ:
         "target=self&style=5&mibao_css=m_webqq&appid=1003903&" \
         "enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fwe" \
         "b.qq.com%2Floginproxy.html&f_url=loginerroralert&str" \
-        "ong_login=1&login_state=10&t=20121029001")
+        "ong_login=1&login_state=10&t=" + time_stamp())
         req = urllib2.urlopen(req)
         req.read()
         for cookie in self.cookies:
@@ -98,18 +103,16 @@ class WebQQ:
                 self.ptwebqq = cookie.value
         urllib2.urlopen(
         'http://web2.qq.com/web2/get_msg_tip?uin=&tp=1&id=0' \
-        '&retype=1&rc=0&lv=3&t=1358252543124').read()
+        '&retype=1&rc=0&lv=3&t=' + time_stamp()).read()
 
     def loginPost(self):
         url = 'http://d.web2.qq.com/channel/login2'
-        r = '{"status":"online",' \
-        '"ptwebqq":"' + self.ptwebqq + '",' \
-        '"passwd_sig":"",' \
-        '"clientid":"' + self.clientid + '",' \
-        '"psessionid":null}'
-        data = 'r=' + urllib2.quote(r) + \
-        '&clientid=' + self.clientid + \
-        '&psessionid=null'
+        r = {"status": "online", 
+        "ptwebqq": self.ptwebqq, 
+        "clientid": self.clientid, 
+        "psessionid": None}
+        data = 'r=' + urllib2.quote(json.dumps(r)) + \
+        '&clientid=' + self.clientid + '&psessionid=null'
         self.result = json.load(self.smoothly_POST_open(url, data))
         self.psessionid = self.result['result']['psessionid']
         self.psessionid = \
@@ -120,11 +123,10 @@ class WebQQ:
 
     def pollMsg(self):
         url = 'http://d.web2.qq.com/channel/poll2'
-        r = '{"clientid":"' + self.clientid + '",' \
-        '"psessionid":"' + self.psessionid + '",' \
-        '"key":0,' \
-        '"ids":[]}'
-        data = 'r=' + urllib2.quote(r) + \
+        r = {"clientid": self.clientid, 
+        "psessionid": self.psessionid, 
+        "key": 0, "ids": []}
+        data = 'r=' + urllib2.quote(json.dumps(r)) + \
         '&clientid=' + self.clientid + \
         '&psessionid=' + self.psessionid
         return json.load(self.smoothly_POST_open(url, data))
@@ -151,31 +153,30 @@ class WebQQ:
         return urllib2.urlopen(req)
         
     def build_msg_data(self, uin, msg, in_group=False):
-        font = '\\"name\\":\\"微软雅黑\\",' \
-        '\\"size\\":\\"10\\",' \
-        '\\"style\\":[0,0,0],' \
-        '\\"color\\":\\"000000\\"'
-        font_a = '[\\"font\\",{' + font + '}]'
-        content = '[\\"' + msg + '\\",' + font_a + ']'
-        uin_name = "to"
+        font = {"name": "微软雅黑", 
+        "size": 10, 
+        "style": [0, 0, 0], 
+        "color": "000000"}
+        content = [msg, ["font", font]]
+        uin_type = "to"
         if in_group:
-            uin_name = "group_uin"
-        r = '{"' + uin_name + '":' + uin + ',' \
-        '"face":237,' \
-        '"content":"' + content + '",' \
-        '"msg_id":13190001,' \
-        '"clientid":"' + self.clientid + '",' \
-        '"psessionid":"' + self.psessionid + '"}'
-        data = 'r=' + urllib2.quote(r) + \
+            uin_type = "group_uin"
+        r = {uin_type: uin, 
+        "face" : 237, 
+        "content": json.dumps(content), 
+        "msg_id": 13190001, 
+        "clientid": self.clientid, 
+        "psessionid": self.psessionid}
+        data = 'r=' + urllib2.quote(json.dumps(r)) + \
         '&clientid=' + self.clientid + \
         '&psessionid=' + self.psessionid
         return data
     
     def get_friend_info(self, uin):
-        url = 'http://s.web2.qq.com/api/get_friend_info2'
+        url = QQ_API_BASE + 'get_friend_info2'
         data = \
         'tuin=' + uin + '&verifysession=&code=&vfwebqq=' + \
-        self.vfwebqq + '&t=1338859742796'
+        self.vfwebqq + '&t=' + time_stamp()
         return json.load(self.smoothly_GET_open(url, data))
 
     def get_nick(self, uin):
@@ -200,6 +201,10 @@ class WebQQ:
         else:
             return
         nick = self.get_nick(uin)
+        if value.has_key("group_code"):
+            nick = self.get_group_member_nick(
+            "%d" % value["group_code"], 
+            "%d" % value["send_uin"])
         reply = self.on_gotmsg(uin, nick, msg)
         if (reply != "") and (reply.__class__ == "".__class__):
             if poll_type == "group_message":
@@ -215,4 +220,24 @@ class WebQQ:
             return
         for it in result:
             self.parse_message_json_part(it)
+    
+    def get_group_member_info(self, gid, uin):
+        url = QQ_API_BASE + 'get_group_info_ext2'
+        data = 'gcode=' + gid + \
+        '&vfwebqq=' + self.vfwebqq + \
+        '&t=' + time_stamp()
+        got = json.load(self.smoothly_GET_open(url, data))
+        if not got.has_key("result"):
+            return {}
+        minfo = got["result"]["minfo"]
+        for it in minfo:
+            if ("%d" % it["uin"]) == uin:
+                return it
+        return {}
+    
+    def get_group_member_nick(self, gid, uin):
+        inf = self.get_group_member_info(gid, uin)
+        if inf.has_key("nick"):
+            return inf["nick"].encode("utf-8")
+        return uin
 
