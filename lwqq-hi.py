@@ -29,7 +29,7 @@ def main():
     while 1:
         time.sleep(0.5)
         try:
-            qq.parse_qq_json(qq.poll_msg())
+            qq.step()
         except KeyboardInterrupt:
             print "CTRL+C met, exit!"
             return

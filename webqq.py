@@ -240,4 +240,7 @@ class WebQQ:
         if inf.has_key("nick"):
             return inf["nick"].encode("utf-8")
         return uin
+    
+    def step(self):
+        self.parse_qq_json(self.poll_msg())
 
