@@ -6,6 +6,7 @@ from os import name as osname
 import getpass
 import time
 import sys
+import os
 
 def reply_qq(sender_id, sender, msg):
     msg = msg.strip()
@@ -40,7 +41,10 @@ class MyDaemon(Daemon):
                 print "Error : ", e
 
 if __name__ == "__main__":
-    daemon = MyDaemon('/tmp/daemon-qqbot.pid')
+    daemon = MyDaemon('/tmp/daemon-qqbot.pid', stdout=(os.getcwd() + os.sep + 'qqbot_log'))
+    if osname == 'nt':
+        daemon.qq_init()
+        daemon.run()
     if len(sys.argv) == 2:
         if 'start' == sys.argv[1]:
             daemon.qq_init()
